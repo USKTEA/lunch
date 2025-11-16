@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  lunch-app:
+    image: suktaekim/lunch:latest
+    container_name: lunch
+    ports:
+      - "8080:8080"
+    environment:
+      # Database
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+
+      # Azure OAuth
+      AZURE_CLIENT_ID: ${AZURE_CLIENT_ID}
+      AZURE_CLIENT_SECRET: ${AZURE_CLIENT_SECRET}
+      AZURE_ISSUER_URI: ${AZURE_ISSUER_URI}
+
+      # APIs
+      SEOUL_OPEN_DATA_APP_KEY: ${SEOUL_OPEN_DATA_APP_KEY}
+      NAVER_CLIENT_ID: ${NAVER_CLIENT_ID}
+      NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET}
+
+      # AWS
+      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
+      AWS_SECRET_KEY: ${AWS_SECRET_KEY}
+
+      # CloudFront
+      CLOUDFRONT_KEY_PAIR_ID: ${CLOUDFRONT_KEY_PAIR_ID}
+      CLOUDFRONT_PRIVATE_KEY: ${CLOUDFRONT_PRIVATE_KEY}
+
+      # JWT
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+
+      SPRING_PROFILES_ACTIVE: prod
+    restart: unless-stopped
+    networks:
+      - lunch-network
+
+networks:
+  lunch-network:
+    driver: bridge
