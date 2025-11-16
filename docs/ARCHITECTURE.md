@@ -2211,7 +2211,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/lunch
     username: postgres
-    password: lunch1234
+    password: ${DATABASE_PASSWORD}  # 환경 변수로 주입
 
   security:
     oauth2:
