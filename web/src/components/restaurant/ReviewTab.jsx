@@ -147,23 +147,23 @@ function ReviewTab() {
   // 컴포넌트 마운트 시 리뷰 및 평점 조회
   useEffect(() => {
     if (restaurant) {
-      reviewStore.fetchReviews(restaurant.managementNumber, 10);
-      reviewStore.fetchReviewRating(restaurant.managementNumber);
+      reviewStore.fetchReviews(restaurant.restaurantManagementNumber, 10);
+      reviewStore.fetchReviewRating(restaurant.restaurantManagementNumber);
     }
 
     return () => {
       reviewStore.clearReviews();
       reviewStore.clearRating();
     };
-  }, [restaurant?.managementNumber]);
+  }, [restaurant?.restaurantManagementNumber]);
 
   // Intersection Observer로 무한 스크롤 구현
   const handleObserver = useCallback((entries) => {
     const target = entries[0];
     if (target.isIntersecting && nextCursor && !loading) {
-      reviewStore.fetchReviews(restaurant.managementNumber, 10, nextCursor);
+      reviewStore.fetchReviews(restaurant.restaurantManagementNumber, 10, nextCursor);
     }
-  }, [nextCursor, loading, restaurant?.managementNumber]);
+  }, [nextCursor, loading, restaurant?.restaurantManagementNumber]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(handleObserver, {
@@ -203,8 +203,8 @@ function ReviewTab() {
   const handleReviewSuccess = () => {
     // 리뷰 작성 성공 시 리뷰 목록 및 평점 다시 조회
     reviewStore.clearReviews();
-    reviewStore.fetchReviews(restaurant.managementNumber, 10);
-    reviewStore.fetchReviewRating(restaurant.managementNumber);
+    reviewStore.fetchReviews(restaurant.restaurantManagementNumber, 10);
+    reviewStore.fetchReviewRating(restaurant.restaurantManagementNumber);
   };
 
   return (

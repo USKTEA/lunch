@@ -79,6 +79,20 @@ const ReviewCount = styled.span`
 const CategoryInfo = styled.div`
   font-size: 14px;
   color: #5f6368;
+  margin-bottom: 4px;
+`;
+
+const Summary = styled.p`
+  font-size: 14px;
+  color: #5f6368;
+  margin: 8px 0 0 0;
+  line-height: 1.5;
+`;
+
+const PriceRange = styled.div`
+  font-size: 13px;
+  color: #5f6368;
+  margin-top: 4px;
 `;
 
 const TabContainer = styled.div`
@@ -127,23 +141,22 @@ function RestaurantDetailPanel() {
 
   const selectedRestaurant = restaurantStore.selectedRestaurant;
 
-  // 식당 선택 시 상세 정보 및 리뷰 조회
   useEffect(() => {
-    if (selectedRestaurant) {
-      restaurantStore.fetchRestaurantDetail(selectedRestaurant.managementNumber);
+    if (selectedRestaurant && !selectedRestaurant.businessInfo) {
+      restaurantStore.fetchRestaurantBusinessInfo(selectedRestaurant.restaurantManagementNumber);
     }
-  }, [selectedRestaurant]);
+  }, [selectedRestaurant?.restaurantManagementNumber]);
 
   // 리뷰 탭 + 페이징 정보 변경 시 리뷰 조회
   useEffect(() => {
     if (selectedRestaurant && activeTab === 'reviews') {
       const loadReviews = async () => {
         await reviewStore.fetchReviews(
-          selectedRestaurant.managementNumber,
+          selectedRestaurant.restaurantManagementNumber,
           pagination.pageSize,
           pagination.cursor
         );
-        await reviewStore.fetchReviewRating(selectedRestaurant.managementNumber)
+        await reviewStore.fetchReviewRating(selectedRestaurant.restaurantManagementNumber)
 
         setPagination(prev => ({
           ...prev,
@@ -199,10 +212,21 @@ function RestaurantDetailPanel() {
         <CloseButton onClick={handleClose}>×</CloseButton>
         <RestaurantName>{selectedRestaurant.name}</RestaurantName>
 
-        {selectedRestaurant.category && (
+        {selectedRestaurant.businessInfo?.mainCategory && (
           <CategoryInfo>
-            {selectedRestaurant.category}
+            {selectedRestaurant.businessInfo.mainCategory}
+            {selectedRestaurant.businessInfo.detailCategory && ` · ${selectedRestaurant.businessInfo.detailCategory}`}
           </CategoryInfo>
+        )}
+
+        {selectedRestaurant.businessInfo?.priceRange && (
+          <PriceRange>
+            {selectedRestaurant.businessInfo.priceRange.minimum.toLocaleString()}원 ~ {selectedRestaurant.businessInfo.priceRange.maximum.toLocaleString()}원
+          </PriceRange>
+        )}
+
+        {selectedRestaurant.businessInfo?.summary && (
+          <Summary>{selectedRestaurant.businessInfo.summary}</Summary>
         )}
       </Header>
 

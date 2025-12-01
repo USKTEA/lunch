@@ -3,8 +3,10 @@ package com.usktea.lunch.service.api
 import com.uber.h3core.H3Core
 import com.uber.h3core.PolygonToCellsFlags
 import com.uber.h3core.util.LatLng
+import com.usktea.lunch.controller.vo.GetRestaurantBusinessInfoResponse
 import com.usktea.lunch.controller.vo.SearchRestaurantResponse
 import com.usktea.lunch.service.entity.RestaurantEntityService
+import jakarta.persistence.EntityNotFoundException
 import org.springframework.stereotype.Service
 import kotlin.String
 
@@ -27,15 +29,60 @@ class RestaurantApiService(
             restaurants =
                 restaurants.map {
                     RestaurantVo(
-                        managementNumber = it.managementNumber,
+                        restaurantManagementNumber = it.managementNumber,
                         name = it.name,
                         coordinate =
                             Coordinate(
                                 x = it.location.x,
                                 y = it.location.y,
                             ),
+                        mainCategory = it.mainCategory,
+                        detailCategory = it.detailCategory,
                     )
                 },
+        )
+    }
+
+    fun getRestaurantBusinessInfo(restaurantManagementNumber: String): GetRestaurantBusinessInfoResponse {
+        val restaurant = restaurantEntityService.findByManagementNumber(restaurantManagementNumber) ?: throw EntityNotFoundException()
+
+        return GetRestaurantBusinessInfoResponse(
+            restaurantManagementNumber = restaurantManagementNumber,
+            name = restaurant.name,
+            contact = restaurant.contact,
+            link = restaurant.externalLink,
+            businessHours =
+                restaurant.businessHours.sortedBy { it.day.order }.map {
+                    GetRestaurantBusinessInfoResponse.BusinessHourVo(
+                        day = it.day,
+                        openAt = it.openAt,
+                        closeAt = it.closeAt,
+                        breakTimeStartAt = it.breakTimeStartAt,
+                        breakTimeEndAt = it.breakTimeEndAt,
+                        isOpen = it.isOpen,
+                    )
+                },
+            menus =
+                restaurant.menus.map {
+                    GetRestaurantBusinessInfoResponse.MenuVo(
+                        name = it.name,
+                        price = it.price,
+                        isRepresentative = it.isRepresentative,
+                    )
+                }.sortedWith(
+                    compareByDescending<GetRestaurantBusinessInfoResponse.MenuVo> { it.isRepresentative }
+                        .thenBy { it.name },
+                ),
+            summary = restaurant.summary,
+            priceRange =
+                restaurant.priceRange?.let {
+                    GetRestaurantBusinessInfoResponse.PriceRangeVo(
+                        minimum = it.minimum,
+                        maximum = it.maximum,
+                    )
+                },
+            mainCategory = restaurant.mainCategory,
+            detailCategory = restaurant.detailCategory,
         )
     }
 
@@ -108,8 +155,10 @@ class RestaurantApiService(
     )
 
     data class RestaurantVo(
-        val managementNumber: String,
+        val restaurantManagementNumber: String,
         val name: String,
         val coordinate: Coordinate,
+        val mainCategory: String?,
+        val detailCategory: String?,
     )
 }

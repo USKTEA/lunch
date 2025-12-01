@@ -36,17 +36,23 @@ class RestaurantStore extends Store {
 
   /**
    * 식당 상세 정보 조회
-   * TODO: 백엔드 API 연동
    */
-  async fetchRestaurantDetail(managementNumber) {
+  async fetchRestaurantBusinessInfo(managementNumber) {
+    // managementNumber가 없거나 이미 businessInfo가 있으면 스킵
+    if (!managementNumber || this.selectedRestaurant?.businessInfo) {
+      return;
+    }
+
     this.loading = true;
     this.error = null;
 
     try {
-      // TODO: 백엔드 API 구현 후 주석 해제
-      // const data = await apiService.fetchRestaurantDetail(managementNumber);
-      // this.selectedRestaurant = { ...this.selectedRestaurant, ...data };
-
+      const businessInfo = await apiService.fetchRestaurantBusinessInfo(managementNumber);
+      // 기존 selectedRestaurant에 businessInfo를 추가
+      this.selectedRestaurant = {
+        ...this.selectedRestaurant,
+        businessInfo
+      };
       this.loading = false;
       this.publish();
     } catch (error) {
@@ -58,10 +64,10 @@ class RestaurantStore extends Store {
   }
 
   /**
-   * 선택된 식당 설정 (마커 클릭 시 호출)
+   * 식당 선택 (마커 클릭 시)
    */
-  setSelectedRestaurant(restaurant) {
-    this.selectedRestaurant = restaurant;
+  selectRestaurant(restaurant) {
+    this.selectedRestaurant = { ...restaurant };
     this.publish();
   }
 

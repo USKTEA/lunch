@@ -30,6 +30,7 @@ spring:
 
 server:
   port: 8080
+  forward-headers-strategy: framework
 
 custom:
   restaurant:
@@ -45,12 +46,15 @@ custom:
       refresh-token: 180d
       code: 5m
     token-end-point: https://api.dev-htbeyondcloud.com/web/login
+#    token-end-point: http://localhost:8080/web/login
     issuer: lunch-app
 
 app:
   cors:
     allowed-origins:
       - https://api.dev-htbeyondcloud.com
+      - http://localhost:8080
+      - http://localhost:3000
     allowed-methods:
       - GET
       - POST
@@ -73,7 +77,7 @@ aws:
     access-key: ${AWS_ACCESS_KEY}
     secret-key: ${AWS_SECRET_KEY}
   cloudfront:
-    domain: static.dev-htbeyondcloud.com
+    domain: dev-htbeyondcloud.com
     key-pair-id: ${CLOUDFRONT_KEY_PAIR_ID}
     private-key: ${CLOUDFRONT_PRIVATE_KEY}
     resource-path: /image/*

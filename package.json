@@ -1,0 +1,23 @@
+{
+  "name": "lunch",
+  "version": "1.0.0",
+  "description": "서울시 일반음식점 데이터를 기반으로 한 점심 추천 애플리케이션",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  },
+  "dependencies": {
+    "axios": "^1.13.2",
+    "dotenv": "^17.2.3",
+    "xlsx": "^0.18.5"
+  }
+}

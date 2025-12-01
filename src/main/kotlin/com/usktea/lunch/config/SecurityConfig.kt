@@ -24,9 +24,14 @@ class SecurityConfig(
     @Order(1)
     fun permitAllSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
-            .securityMatcher("/web/**", "/oauth2/**")
+            .securityMatcher("/web/**", "/oauth2/**", "/login/**", "/check", "/api/auth/**")
             .authorizeHttpRequests { auth ->
                 auth.anyRequest().permitAll()
+            }
+            .oauth2Login { oAuth2 ->
+                oAuth2.authorizationEndpoint { endPoint ->
+                    endPoint.authorizationRequestRepository(authorizationRequestEntityService)
+                }.successHandler(oAuth2LoginSuccessHandler)
             }
             .csrf { csrf -> csrf.disable() }
             .cors { }
@@ -43,11 +48,6 @@ class SecurityConfig(
             }
             .authorizeHttpRequests { auth ->
                 auth.anyRequest().authenticated()
-            }
-            .oauth2Login { oAuth2 ->
-                oAuth2.authorizationEndpoint { endPoint ->
-                    endPoint.authorizationRequestRepository(authorizationRequestEntityService)
-                }.successHandler(oAuth2LoginSuccessHandler)
             }
             .oauth2ResourceServer { oAuth2 ->
                 oAuth2.jwt { jwt ->

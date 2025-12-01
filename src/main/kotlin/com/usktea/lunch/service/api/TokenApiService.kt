@@ -59,7 +59,7 @@ class TokenApiService(
                 ResponseCookie.from(name, value)
                     .httpOnly(true)
                     .secure(true)
-                    .sameSite("Lax")
+                    .sameSite("None")
                     .domain(".$cloudfrontDomain")
                     .path("/")
                     .build()
@@ -67,6 +67,7 @@ class TokenApiService(
             httpServletResponse.addHeader("Set-Cookie", cookie.toString())
         }
 
+        logger.error("CloudFront Cookie: {}", issueTokenResponse.cloudfrontSignedCookies)
         return issueTokenResponse
     }
 

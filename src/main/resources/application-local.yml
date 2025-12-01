@@ -1,0 +1,40 @@
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          azure:
+            client-id: ${AZURE_CLIENT_ID}
+            client-secret: ${AZURE_CLIENT_SECRET}
+            scope: openid,profile,email
+            redirect-uri: "http://localhost:8080/login/oauth2/code/{registrationId}"
+        provider:
+          azure:
+            issuer-uri: ${AZURE_ISSUER_URI}
+
+custom:
+  jwt:
+    token-end-point: http://localhost:3000/web/login
+
+logging:
+  level:
+    sql: debug
+
+app:
+  cors:
+    allowed-origins:
+      - http://localhost:8080
+      - http://localhost:3000
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+      - PATCH
+    allowed-headers:
+      - Authorization
+      - Content-Type
+      - Accept
+    allow-credentials: true
+    max-age: 3600

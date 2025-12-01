@@ -2,6 +2,7 @@
 
 import Store from './Store';
 import MarkerFactory from '../components/ui/MarkerFactory';
+import { getMarkerIcon } from '../utils/markerIcons';
 
 // Naver Map Wrapper
 class MapStore extends Store {
@@ -28,6 +29,10 @@ class MapStore extends Store {
    * @param {object} position - 현재 위치
    */
   initializeMap(elementId, position = this.defaultPosition) {
+    if (this.map) {
+      return;
+    }
+
     this.defaultPosition = position;
 
     const mapOptions = {
@@ -91,11 +96,19 @@ class MapStore extends Store {
     const newMarkers = [];
     newRestaurantsMap.forEach(({ restaurant, adjustedPos }, key) => {
       if (!existingMarkersMap.has(key)) {
+        // 카테고리 기반 마커 아이콘 생성
+        const markerIconUrl = getMarkerIcon(
+          restaurant.mainCategory,
+          restaurant.detailCategory,
+          40
+        );
+
         const marker = new naver.maps.Marker({
           position: adjustedPos,
           map: this.map,
           icon: {
-            content: MarkerFactory('restaurant'),
+            url: markerIconUrl,
+            size: new naver.maps.Size(40, 40),
             anchor: new naver.maps.Point(20, 20),
           },
         });

@@ -39,7 +39,8 @@ function RestaurantMap() {
     mapStore.addRestaurantMarkers(
       restaurantStore.restaurants,
       (restaurant) => {
-        restaurantStore.setSelectedRestaurant(restaurant);
+        restaurantStore.selectRestaurant(restaurant);
+        restaurantStore.fetchRestaurantBusinessInfo(restaurant.restaurantManagementNumber);
       }
     );
   };

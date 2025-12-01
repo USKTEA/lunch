@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController
 class UserController(
     private val userApiService: UserApiService,
 ) {
-    @GetMapping("/users/me")
+    @GetMapping("/api/users/me")
     fun getUser(authentication: CustomAuthenticationToken): GetUserResponse {
         return userApiService.getUser(userId = authentication.userId)
     }

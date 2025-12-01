@@ -14,7 +14,8 @@ enum class TokenType(
         @JvmStatic
         @JsonCreator
         fun fromString(value: String): TokenType {
-            return entries.find { it.value.equals(value, ignoreCase = true) } ?: throw IllegalArgumentException("Unknown token type: $value")
+            return entries.find { it.value.equals(value, ignoreCase = true) }
+                ?: throw IllegalArgumentException("Unknown token type: $value")
         }
     }
 }

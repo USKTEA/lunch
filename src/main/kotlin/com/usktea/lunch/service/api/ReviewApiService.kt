@@ -71,7 +71,7 @@ class ReviewApiService(
             ReviewVo(
                 restaurantManagementNumber = review.restaurantManagementNumber,
                 reviewerId = review.reviewerId,
-                reviewerNickname = users[review.reviewerId]?.nickname ?: "Ghost",
+                reviewerNickname = users[review.reviewerId]?.nickname ?: "익명의 사용자",
                 rating = review.rating,
                 content = review.content,
                 imageUrls = review.imageUrls,

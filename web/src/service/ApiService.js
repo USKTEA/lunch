@@ -7,6 +7,7 @@ class ApiService {
   constructor() {
     this.instance = axios.create({
       baseURL: "https://api.dev-htbeyondcloud.com",
+      // baseURL: "http://localhost:8080",
       withCredentials: true,
       headers: {
         "Accept": "application/json"
@@ -50,7 +51,8 @@ class ApiService {
               console.log('Trying to refresh token...');
 
               const { data } = await axios.post(
-                'https://api.dev-htbeyondcloud.com/api/auth/tokens',
+                'http://localhost:8080/api/auth/tokens',
+                // 'https://api.dev-htbeyondcloud.com/api/auth/tokens',
                 new URLSearchParams({
                   grant_type: 'refresh_token'
                 }),
@@ -117,6 +119,16 @@ class ApiService {
     }
   }
 
+  async fetchRestaurantBusinessInfo(managementNumber) {
+    try {
+      const response = await this.instance.get(`/api/restaurants/${managementNumber}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching members:", error);
+      throw error;
+    }
+  }
+
   // Authorization Code를 Access Token으로 교환
   async getToken(code, grantType, redirectUri, state) {
     const response = await this.instance.post(
@@ -139,7 +151,7 @@ class ApiService {
 
   async getUser() {
     const response = await this.instance.get(
-      "/users/me"
+      "/api/users/me"
     )
 
     return response.data

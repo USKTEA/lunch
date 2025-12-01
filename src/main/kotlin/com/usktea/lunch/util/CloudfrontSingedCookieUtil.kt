@@ -41,7 +41,7 @@ class CloudfrontSingedCookieUtil(
             cloudfrontUtil.getCookiesForCustomPolicy { builder ->
                 builder.keyPairId(keyPairId)
                 builder.privateKey(privateKey)
-                builder.resourceUrl("https://$domain$resourcePath")
+                builder.resourceUrl("https://static.$domain$resourcePath")
                 builder.expirationDate(now.plus(cookieExpiration).toInstant().truncatedTo(ChronoUnit.SECONDS))
                 builder.build()
             }

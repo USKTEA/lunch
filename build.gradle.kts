@@ -112,13 +112,22 @@ tasks.register<Copy>("copyReactBuild") {
     into("${project.projectDir}/src/main/resources/static")
 }
 
-// Jib 설정
 jib {
     from {
         image = "eclipse-temurin:21-jre"
+        platforms {
+            platform {
+                architecture = "amd64"
+                os = "linux"
+            }
+            platform {
+                architecture = "arm64"
+                os = "linux"
+            }
+        }
     }
     to {
-        image = "YOUR_DOCKERHUB_USERNAME/lunch-app" // Docker Hub 사용자명으로 변경 필요
+        image = "suktaekim/lunch"
         tags = setOf("latest", version.toString())
     }
     container {

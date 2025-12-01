@@ -208,7 +208,7 @@ function ReviewWriteModal({ isOpen, onClose, onSuccess }) {
     const imageNames = Array.from(imageStore.images.keys());
 
     const uploaded = await reviewStore.submitReview(
-      selectedRestaurant?.managementNumber,
+      selectedRestaurant?.restaurantManagementNumber,
       imageNames,
       imageUrls
     );

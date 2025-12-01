@@ -17,6 +17,7 @@ class AuthStore extends Store {
     const state = this.generateUUID();
     sessionStorage.setItem('state', state);
     window.location.href = `https://api.dev-htbeyondcloud.com${provider.authorizationUri}?redirect_uri=${redirectUri}&state=${state}`;
+    // window.location.href = `http://localhost:8080${provider.authorizationUri}?redirect_uri=${redirectUri}&state=${state}`;
   }
 
   // UUID v4 생성 (crypto.randomUUID 대체)

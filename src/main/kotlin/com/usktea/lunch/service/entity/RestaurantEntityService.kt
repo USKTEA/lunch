@@ -3,6 +3,7 @@ package com.usktea.lunch.service.entity
 import com.usktea.lunch.entity.RestaurantEntity
 import com.usktea.lunch.repository.RestaurantRepository
 import org.locationtech.jts.geom.Point
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 
@@ -35,6 +36,14 @@ class RestaurantEntityService(
 
     fun findAllRestaurantsH3IndicesIn(h3CellIndices: List<String>): List<RestaurantEntity> {
         return restaurantRepository.findAllRestaurantsH3IndicesInAndStatusIsOpen(h3CellIndices.toTypedArray())
+    }
+
+    fun findAllByManagementNumbers(restaurantManagementNumbers: Set<String>): List<RestaurantEntity> {
+        return restaurantRepository.findAllById(restaurantManagementNumbers)
+    }
+
+    fun findByManagementNumber(restaurantManagementNumber: String): RestaurantEntity? {
+        return restaurantRepository.findByIdOrNull(restaurantManagementNumber)
     }
 
     private fun toWKT(point: Point?): String? {

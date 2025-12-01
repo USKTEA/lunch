@@ -109,6 +109,7 @@ const LikeButton = styled.button`
  */
 function ReviewItem({ review }) {
   const formatDate = (dateString) => {
+    // ISO-8601 문자열을 Date로 파싱
     const date = new Date(dateString);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
