@@ -1,4 +1,6 @@
+const publicUrl = process.env.PUBLIC_URL || '';
+
 export const markerType = {
-  byb: '/byb.png',
-  restaurant: '/hambugi.png',
+  byb: `${publicUrl}/byb.png`,
+  restaurant: `${publicUrl}/hambugi.png`,
 };

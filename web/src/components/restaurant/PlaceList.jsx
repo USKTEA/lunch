@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import useRestaurantStore from '../../hooks/useRestaurantStore';
 import PlaceListItem from './PlaceListItem';
 import usePlaceStore from '../../hooks/usePlaceStore';
 
@@ -143,7 +142,7 @@ const EmptyState = styled.div`
 
 /**
  * 맛집 리스트 컴포넌트
- * store.restaurants를 표시만 함
+ * placeStore.places를 표시
  */
 function PlaceList() {
   const placeStore = usePlaceStore();

@@ -19,6 +19,10 @@ class MapStore extends Store {
 
   markers = [];
 
+  // H3 클러스터 폴리곤 및 마커
+  clusterPolygons = [];
+  clusterMarkers = [];
+
   constructor() {
     super();
   }
@@ -150,6 +154,110 @@ class MapStore extends Store {
 
   currentZoomLevel() {
     return this.map.getZoom();
+  }
+
+  /**
+   * H3 클러스터 폴리곤 및 개수 마커 표시
+   * @param {Array} clusters - 클러스터 배열 [{h3Index, center, boundary, restaurants}]
+   * @param {Function} onClusterClick - 클러스터 클릭 콜백
+   */
+  addClusterPolygons(clusters, onClusterClick) {
+    if (!this.map) {
+      console.error('Map is not initialized');
+      return;
+    }
+
+    // 기존 클러스터 정리
+    this.clearClusters();
+
+    clusters.forEach(cluster => {
+      const count = cluster.restaurants.length;
+      const maxCount = 200;
+      // 개수에 따른 폴리곤 투명도 계산 (0.15 ~ 0.6)
+      const fillOpacity = 0.15 + (Math.min(count, maxCount) / maxCount) * 0.45;
+
+      // 폴리곤 경계 좌표 변환
+      const paths = cluster.boundary.map(
+        coord => new naver.maps.LatLng(coord.y, coord.x)
+      );
+
+      // 폴리곤 생성
+      const polygon = new naver.maps.Polygon({
+        map: this.map,
+        paths: paths,
+        fillColor: '#E50914',
+        fillOpacity: fillOpacity,
+        strokeColor: '#B20710',
+        strokeWeight: 2,
+        clickable: true,
+      });
+
+      // 클릭 이벤트
+      if (onClusterClick) {
+        naver.maps.Event.addListener(polygon, 'click', () => {
+          onClusterClick(cluster);
+        });
+      }
+
+      this.clusterPolygons.push(polygon);
+
+      // 셀 중앙에 개수 표시 마커 (원형, 불투명)
+      // 개수에 따른 원 크기 (36px ~ 56px)
+      const size = 36 + (Math.min(count, maxCount) / maxCount) * 20;
+
+      const countMarker = new naver.maps.Marker({
+        position: new naver.maps.LatLng(cluster.center.y, cluster.center.x),
+        map: this.map,
+        icon: {
+          content: `<div style="
+            background: #E03030;
+            color: white;
+            width: ${size}px;
+            height: ${size}px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: ${count >= 100 ? 12 : 14}px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            border: 2px solid rgba(255,255,255,0.8);
+          ">${count}</div>`,
+          anchor: new naver.maps.Point(size / 2, size / 2),
+        },
+        clickable: true,
+      });
+
+      // 마커 클릭 이벤트
+      if (onClusterClick) {
+        naver.maps.Event.addListener(countMarker, 'click', () => {
+          onClusterClick(cluster);
+        });
+      }
+
+      this.clusterMarkers.push(countMarker);
+    });
+
+    this.publish();
+  }
+
+  /**
+   * 클러스터 폴리곤 및 마커 정리
+   */
+  clearClusters() {
+    this.clusterPolygons.forEach(p => p.setMap(null));
+    this.clusterMarkers.forEach(m => m.setMap(null));
+    this.clusterPolygons = [];
+    this.clusterMarkers = [];
+  }
+
+  /**
+   * 식당 마커 정리 (회사 마커 제외)
+   */
+  clearRestaurantMarkers() {
+    const companyMarker = this.markers[0];
+    this.markers.slice(1).forEach(m => m.setMap(null));
+    this.markers = [companyMarker];
   }
 }
 

@@ -45,8 +45,7 @@ custom:
       access-token: 1h
       refresh-token: 180d
       code: 5m
-    token-end-point: https://api.dev-htbeyondcloud.com/web/login
-#    token-end-point: http://localhost:8080/web/login
+    token-end-point: ${JWT_TOKEN_ENDPOINT:https://api.dev-htbeyondcloud.com/web/login}
     issuer: lunch-app
 
 app:

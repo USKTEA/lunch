@@ -1,13 +1,15 @@
 import axios from "axios";
 import { authStore } from '../stores/AuthStore';
 
+// 환경변수에서 API URL 가져오기 (기본값: 프로덕션)
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://api.dev-htbeyondcloud.com';
+
 class ApiService {
   static isRedirectingToLogin = false;  // 중복 requireLogin 방지 플래그
 
   constructor() {
     this.instance = axios.create({
-      baseURL: "https://api.dev-htbeyondcloud.com",
-      // baseURL: "http://localhost:8080",
+      baseURL: API_BASE_URL,
       withCredentials: true,
       headers: {
         "Accept": "application/json"
@@ -51,8 +53,7 @@ class ApiService {
               console.log('Trying to refresh token...');
 
               const { data } = await axios.post(
-                'http://localhost:8080/api/auth/tokens',
-                // 'https://api.dev-htbeyondcloud.com/api/auth/tokens',
+                `${API_BASE_URL}/api/auth/tokens`,
                 new URLSearchParams({
                   grant_type: 'refresh_token'
                 }),

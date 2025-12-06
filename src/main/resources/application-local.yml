@@ -1,4 +1,21 @@
 spring:
+  application:
+    name: lunch
+
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
   security:
     oauth2:
       client:
@@ -12,17 +29,30 @@ spring:
           azure:
             issuer-uri: ${AZURE_ISSUER_URI}
 
-custom:
-  jwt:
-    token-end-point: http://localhost:3000/web/login
+server:
+  port: 8080
+  forward-headers-strategy: framework
 
-logging:
-  level:
-    sql: debug
+custom:
+  restaurant:
+    app-key: ${SEOUL_OPEN_DATA_APP_KEY}
+  naver:
+    client-id: ${NAVER_CLIENT_ID}
+    client-secret: ${NAVER_CLIENT_SECRET}
+  jwt:
+    private-key: ${JWT_PRIVATE_KEY}
+    public-key: ${JWT_PUBLIC_KEY}
+    expiration:
+      access-token: 1h
+      refresh-token: 180d
+      code: 5m
+    token-end-point: http://localhost:3000/web/login
+    issuer: lunch-app
 
 app:
   cors:
     allowed-origins:
+      - https://api.dev-htbeyondcloud.com
       - http://localhost:8080
       - http://localhost:3000
     allowed-methods:
@@ -38,3 +68,23 @@ app:
       - Accept
     allow-credentials: true
     max-age: 3600
+
+aws:
+  s3:
+    bucket: htbeyond-lunch
+    region: ap-northeast-2
+  credentials:
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+  cloudfront:
+    domain: dev-htbeyondcloud.com
+    key-pair-id: ${CLOUDFRONT_KEY_PAIR_ID}
+    private-key: ${CLOUDFRONT_PRIVATE_KEY}
+    resource-path: /image/*
+    cookie-expiration: 1h
+
+logging:
+  level:
+    sql: info
+    root: info
+    com.usktea.lunch: debug

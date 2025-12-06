@@ -30,19 +30,36 @@ function RestaurantMap() {
   const restaurantStore = useRestaurantStore();
 
   const fetchRestaurantsAndAddMarkers = async () => {
+    const zoomLevel = mapStore.currentZoomLevel();
+
     await restaurantStore.fetchRestaurants(
       mapStore.currentBoundary(),
-      mapStore.currentZoomLevel()
+      zoomLevel
     );
 
-    // 마커 클릭 시 선택된 식당 업데이트
-    mapStore.addRestaurantMarkers(
-      restaurantStore.restaurants,
-      (restaurant) => {
-        restaurantStore.selectRestaurant(restaurant);
-        restaurantStore.fetchRestaurantBusinessInfo(restaurant.restaurantManagementNumber);
-      }
-    );
+    // zoomLevel 16: 클러스터 폴리곤 표시
+    if (zoomLevel === 16) {
+      mapStore.clearRestaurantMarkers();
+      mapStore.addClusterPolygons(
+        restaurantStore.clusters,
+        (cluster) => {
+          // 클러스터 클릭 시 해당 셀 중심으로 줌인
+          const center = new naver.maps.LatLng(cluster.center.y, cluster.center.x);
+          mapStore.map.setCenter(center);
+          mapStore.map.setZoom(17);
+        }
+      );
+    } else {
+      // zoomLevel 17+: 개별 식당 마커 표시
+      mapStore.clearClusters();
+      mapStore.addRestaurantMarkers(
+        restaurantStore.getAllRestaurants(),
+        (restaurant) => {
+          restaurantStore.selectRestaurant(restaurant);
+          restaurantStore.fetchRestaurantBusinessInfo(restaurant.restaurantManagementNumber);
+        }
+      );
+    }
   };
 
   const handleSetLocation = (location) => {

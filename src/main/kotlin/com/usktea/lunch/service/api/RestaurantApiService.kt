@@ -5,6 +5,7 @@ import com.uber.h3core.PolygonToCellsFlags
 import com.uber.h3core.util.LatLng
 import com.usktea.lunch.controller.vo.GetRestaurantBusinessInfoResponse
 import com.usktea.lunch.controller.vo.SearchRestaurantResponse
+import com.usktea.lunch.entity.RestaurantEntity
 import com.usktea.lunch.service.entity.RestaurantEntityService
 import jakarta.persistence.EntityNotFoundException
 import org.springframework.stereotype.Service
@@ -20,26 +21,49 @@ class RestaurantApiService(
         zoomLevel: Int,
     ): SearchRestaurantResponse {
         val h3Resolution = toH3Resolution(zoomLevel)
-        val boundary = toPolygon(boundary)
-        val h3CellIndices = getH3CellIndices(boundary, h3Resolution)
-
+        val polygon = toPolygon(boundary)
+        val h3CellIndices = getH3CellIndices(polygon, h3Resolution)
         val restaurants = restaurantEntityService.findAllRestaurantsH3IndicesIn(h3CellIndices)
 
+        val h3IndicesAndRestaurantsPairs =
+            buildMap<String, MutableList<RestaurantEntity>> {
+                restaurants.forEach { restaurant ->
+                    restaurant.h3Indices
+                        .filter { it in h3CellIndices }
+                        .forEach { h3Index ->
+                            getOrPut(h3Index) { mutableListOf() }.add(restaurant)
+                        }
+                }
+            }
+
+        val clusters =
+            h3IndicesAndRestaurantsPairs.entries.map { (h3Index, cellRestaurants) ->
+                val center = h3core.cellToLatLng(h3Index)
+                val cellBoundary = h3core.cellToBoundary(h3Index)
+
+                ClusterVo(
+                    h3Index = h3Index,
+                    center = Coordinate(x = center.lng, y = center.lat),
+                    boundary = cellBoundary.map { Coordinate(x = it.lng, y = it.lat) },
+                    restaurants =
+                        cellRestaurants.map {
+                            RestaurantVo(
+                                restaurantManagementNumber = it.managementNumber,
+                                name = it.name,
+                                coordinate =
+                                    Coordinate(
+                                        x = it.location.x,
+                                        y = it.location.y,
+                                    ),
+                                mainCategory = it.mainCategory,
+                                detailCategory = it.detailCategory,
+                            )
+                        },
+                )
+            }
+
         return SearchRestaurantResponse(
-            restaurants =
-                restaurants.map {
-                    RestaurantVo(
-                        restaurantManagementNumber = it.managementNumber,
-                        name = it.name,
-                        coordinate =
-                            Coordinate(
-                                x = it.location.x,
-                                y = it.location.y,
-                            ),
-                        mainCategory = it.mainCategory,
-                        detailCategory = it.detailCategory,
-                    )
-                },
+            clusters = clusters,
         )
     }
 
@@ -123,12 +147,12 @@ class RestaurantApiService(
     }
 
     /**
-     | 네이버 지도 Zoom Level | 대략적 거리 스케일 | H3 Resolution | 셀 지름(약) | 용도 |
-     |------------------------|-------------------|--------------------|-------------|------|
-     | 16 | 약 150m | 9 | ~150m | 상권 단위 탐색 / 거리 중심 |
-     | 17 | 약 100m | 10 | ~70m | 거리 단위 / 주요 도로 |
-     | 18 | 약 50m | 10 | ~35m | 개별 매장 탐색 (기본 보기) |
-     | 19 | 약 30m | 11 | ~20m | 세밀 보기 / 건물 단위 |
+     * | 네이버 지도 Zoom Level | 대략적 거리 스케일 | H3 Resolution | 셀 지름(약) | 용도 |
+     * |------------------------|-------------------|--------------------|-------------|------|
+     * | 16 | 약 150m | 9 | ~150m | 상권 단위 탐색 / 거리 중심 |
+     * | 17 | 약 100m | 10 | ~70m | 거리 단위 / 주요 도로 |
+     * | 18 | 약 50m | 10 | ~35m | 개별 매장 탐색 (기본 보기) |
+     * | 19 | 약 30m | 11 | ~20m | 세밀 보기 / 건물 단위 |
      */
     private fun toH3Resolution(zoomLevel: Int): Int {
         return when (zoomLevel) {
@@ -160,5 +184,12 @@ class RestaurantApiService(
         val coordinate: Coordinate,
         val mainCategory: String?,
         val detailCategory: String?,
+    )
+
+    data class ClusterVo(
+        val h3Index: String,
+        val center: Coordinate,
+        val boundary: List<Coordinate>,
+        val restaurants: List<RestaurantVo>,
     )
 }

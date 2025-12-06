@@ -6,7 +6,7 @@ import { apiService } from '../service/ApiService';
  * UI 상태(검색어, 필터)는 컴포넌트에서 관리
  */
 class RestaurantStore extends Store {
-  restaurants = [];
+  clusters = [];  // H3 셀별 클러스터 (각 클러스터에 restaurants 포함)
   selectedRestaurant = null;  // 선택된 식당 상세 정보
   loading = false;
   error = null;
@@ -22,7 +22,7 @@ class RestaurantStore extends Store {
     try {
       const data = await apiService.fetchRestaurants(boundary, zoomLevel);
 
-      this.restaurants = data.restaurants;
+      this.clusters = data.clusters || [];
 
       this.loading = false;
       this.publish();
@@ -32,6 +32,13 @@ class RestaurantStore extends Store {
       this.publish();
       throw error;
     }
+  }
+
+  /**
+   * 모든 클러스터의 식당을 flat하게 반환
+   */
+  getAllRestaurants() {
+    return this.clusters.flatMap(cluster => cluster.restaurants);
   }
 
   /**
