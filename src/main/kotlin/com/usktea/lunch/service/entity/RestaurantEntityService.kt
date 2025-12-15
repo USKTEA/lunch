@@ -6,12 +6,15 @@ import org.locationtech.jts.geom.Point
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
+import java.util.concurrent.ConcurrentHashMap
 
 @Service
 class RestaurantEntityService(
     private val jdbcTemplate: JdbcTemplate,
     private val restaurantRepository: RestaurantRepository,
 ) {
+    private val cache: MutableMap<String, List<RestaurantEntity>> = ConcurrentHashMap()
+
     fun insert(restaurants: List<RestaurantEntity>) {
         if (restaurants.isEmpty()) {
             return
@@ -35,7 +38,16 @@ class RestaurantEntityService(
     }
 
     fun findAllRestaurantsH3IndicesIn(h3CellIndices: List<String>): List<RestaurantEntity> {
-        return restaurantRepository.findAllRestaurantsH3IndicesInAndStatusIsOpen(h3CellIndices.toTypedArray())
+        val notCached = h3CellIndices.filter { !cache.containsKey(it) }
+
+        val fetched = restaurantRepository.findAllRestaurantsH3IndicesInAndStatusIsOpen(notCached.toTypedArray())
+        val cached = cache.filterKeys { it in h3CellIndices }
+
+        notCached.forEach { h3CellIndex ->
+            cache[h3CellIndex] = fetched.filter { it.h3Indices.contains(h3CellIndex) }
+        }
+
+        return fetched + cached.values.flatten()
     }
 
     fun findAllByManagementNumbers(restaurantManagementNumbers: Set<String>): List<RestaurantEntity> {

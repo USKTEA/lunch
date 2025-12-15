@@ -37,8 +37,8 @@ function RestaurantMap() {
       zoomLevel
     );
 
-    // zoomLevel 16: 클러스터 폴리곤 표시
-    if (zoomLevel === 16) {
+    // zoomLevel 14~16: 클러스터 폴리곤 표시
+    if (zoomLevel <= 16) {
       mapStore.clearRestaurantMarkers();
       mapStore.addClusterPolygons(
         restaurantStore.clusters,
@@ -46,7 +46,7 @@ function RestaurantMap() {
           // 클러스터 클릭 시 해당 셀 중심으로 줌인
           const center = new naver.maps.LatLng(cluster.center.y, cluster.center.x);
           mapStore.map.setCenter(center);
-          mapStore.map.setZoom(17);
+          mapStore.map.setZoom(zoomLevel + 1);
         }
       );
     } else {

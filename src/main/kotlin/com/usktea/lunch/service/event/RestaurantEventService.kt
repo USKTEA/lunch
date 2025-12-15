@@ -69,6 +69,8 @@ class RestaurantEventService(
                     location = geometryFactory.createPoint(Coordinate(xCoordinate, yCoordinate)),
                     h3Indices =
                         arrayOf(
+                            h3Core.latLngToCellAddress(yCoordinate, xCoordinate, 7),
+                            h3Core.latLngToCellAddress(yCoordinate, xCoordinate, 8),
                             h3Core.latLngToCellAddress(yCoordinate, xCoordinate, 9),
                             h3Core.latLngToCellAddress(yCoordinate, xCoordinate, 10),
                             h3Core.latLngToCellAddress(yCoordinate, xCoordinate, 11),

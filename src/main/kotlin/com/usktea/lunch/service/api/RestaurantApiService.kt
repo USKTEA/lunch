@@ -156,6 +156,8 @@ class RestaurantApiService(
      */
     private fun toH3Resolution(zoomLevel: Int): Int {
         return when (zoomLevel) {
+            14 -> 8
+            15 -> 8
             16 -> 9
             17 -> 10
             18 -> 10

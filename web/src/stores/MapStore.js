@@ -42,7 +42,7 @@ class MapStore extends Store {
     const mapOptions = {
       center: new naver.maps.LatLng(position.y, position.x),
       zoom: this.defaultZoomLevel,
-      minZoom: 16,
+      minZoom: 14,
       maxZoom: 19,
       zoomControl: true,
     };
