@@ -38,9 +38,10 @@ const App = () => {
   const userStore = useUserStore();
 
   useEffect(() => {
-    authStore.loadToken()
-    userStore.fetchUser()
-  }, []);
+    if (authStore.isUserAuthenticated()) {
+      userStore.fetchUser()
+    }
+  }, [authStore.tokenInfo]);
 
   return (
     <BrowserRouter>

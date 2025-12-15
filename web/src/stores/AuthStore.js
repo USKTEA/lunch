@@ -9,6 +9,7 @@ class AuthStore extends Store {
 
   constructor() {
     super();
+    this.loadToken();  // localStorage에서 토큰 복원
   }
 
   startWith(provider, redirectUri) {

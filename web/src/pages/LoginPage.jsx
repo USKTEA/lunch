@@ -108,8 +108,6 @@ function LoginPage() {
     }
   });
 
-
-
   useEffect(() => {
     const handleCodeExchange = async () => {
       if (code) {
@@ -119,7 +117,6 @@ function LoginPage() {
 
           // 로그인 성공 - 리다이렉트 플래그 리셋
           authStore.isRedirectingToLogin = false;
-          navigate(location.pathname, { replace: true });
 
           // 원래 가려던 경로로 이동
           const redirectPath = authStore.getRedirectAfterLogin() || "/web/main";
@@ -128,14 +125,13 @@ function LoginPage() {
           navigate(redirectPath, { replace: true });
         } catch (error) {
           console.error("Token exchange failed:", error);
-
           navigate("/web/login", { replace: true });
         }
       }
     };
 
-    handleCodeExchange();
-  }, []);
+    handleCodeExchange()
+  }, [code]);
 
   const handleLogin = (provider) => {
     console.log("Login with:", provider);

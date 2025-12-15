@@ -27,10 +27,14 @@ class RestaurantStore extends Store {
       this.loading = false;
       this.publish();
     } catch (error) {
+      // 401은 ApiService에서 로그인 리다이렉트 처리
+      if (error.response?.status === 401) {
+        this.loading = false;
+        return;
+      }
       this.error = error.message;
       this.loading = false;
       this.publish();
-      throw error;
     }
   }
 
@@ -63,10 +67,14 @@ class RestaurantStore extends Store {
       this.loading = false;
       this.publish();
     } catch (error) {
+      // 401은 ApiService에서 로그인 리다이렉트 처리
+      if (error.response?.status === 401) {
+        this.loading = false;
+        return;
+      }
       this.error = error.message;
       this.loading = false;
       this.publish();
-      throw error;
     }
   }
 

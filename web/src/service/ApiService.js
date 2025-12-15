@@ -67,6 +67,7 @@ class ApiService {
 
               // AuthStore에 새 토큰 정보 전체 저장
               authStore.setTokenInfo(data);
+              ApiService.isRedirectingToLogin = false;  // 리다이렉트 플래그 리셋
               console.log('Token refreshed successfully, expires at:', data.expiresAt);
 
               // 원래 요청에 새 토큰 추가
