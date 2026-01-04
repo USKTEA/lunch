@@ -1271,6 +1271,239 @@ requireLogin(errorData) {
 }
 ```
 
+### 5.9 CloudFront Signed Cookie 시스템
+
+> **이 섹션은 S3에 저장된 이미지(리뷰 사진 등)를 안전하게 제공하기 위한 인증 시스템입니다.**
+
+#### 5.9.1 개요
+
+S3에 저장된 리뷰 이미지를 CloudFront를 통해 제공할 때, **인증된 사용자만 접근할 수 있도록** Signed Cookie를 사용합니다.
+
+```
+[사용자] ← CloudFront (Signed Cookie 검증) ← [S3 버킷]
+              ↑
+    Cookie: CloudFront-Key-Pair-Id=...
+    Cookie: CloudFront-Policy=...
+    Cookie: CloudFront-Signature=...
+```
+
+#### 5.9.2 Signed Cookie 발급 플로우
+
+토큰 발급 시 (로그인 또는 토큰 갱신) CloudFront Signed Cookie도 함께 발급합니다.
+
+```
+1. POST /api/auth/tokens (로그인 또는 갱신)
+   ↓
+2. JWT Access Token 생성
+   ↓
+3. CloudFront Signed Cookie 생성 (CloudfrontSingedCookieUtil)
+   ↓
+4. 응답 헤더에 쿠키 설정
+   - Set-Cookie: refresh_token=... (HttpOnly, Secure, path=/api/auth/tokens)
+   - Set-Cookie: CloudFront-Key-Pair-Id=... (HttpOnly, Secure, domain=.domain.com)
+   - Set-Cookie: CloudFront-Policy=... (HttpOnly, Secure, domain=.domain.com)
+   - Set-Cookie: CloudFront-Signature=... (HttpOnly, Secure, domain=.domain.com)
+```
+
+#### 5.9.3 CloudFront Signed Cookie 설정
+
+> **위치**: `src/main/kotlin/com/usktea/lunch/config/CloudfrontConfig.kt`
+
+```kotlin
+@Configuration
+class CloudfrontConfig {
+    @Bean
+    fun cloudfrontUtil(): CloudFrontUtilities {
+        return CloudFrontUtilities.create()
+    }
+}
+```
+
+> **위치**: `src/main/kotlin/com/usktea/lunch/util/CloudfrontSingedCookieUtil.kt`
+
+```kotlin
+@Component
+class CloudfrontSingedCookieUtil(
+    @Value("\${aws.cloudfront.domain}") private val domain: String,
+    @Value("\${aws.cloudfront.key-pair-id}") private val keyPairId: String,
+    @Value("\${aws.cloudfront.private-key}") privateKeyString: String,
+    @Value("\${aws.cloudfront.resource-path}") private val resourcePath: String,
+    @Value("\${aws.cloudfront.cookie-expiration}") private val cookieExpiration: Duration,
+    private val cloudfrontUtil: CloudFrontUtilities,
+) {
+    private val privateKey: PrivateKey = // RSA 키 파싱...
+
+    fun generateSignedCookie(now: OffsetDateTime): Map<String, String> {
+        val cookies = cloudfrontUtil.getCookiesForCustomPolicy { builder ->
+            builder.keyPairId(keyPairId)
+            builder.privateKey(privateKey)
+            builder.resourceUrl("https://static.$domain$resourcePath")
+            builder.expirationDate(now.plus(cookieExpiration).toInstant())
+            builder.build()
+        }
+
+        return mapOf(
+            parseHeaderValue(cookies.keyPairIdHeaderValue()),
+            parseHeaderValue(cookies.policyHeaderValue()),
+            parseHeaderValue(cookies.signatureHeaderValue()),
+        )
+    }
+}
+```
+
+#### 5.9.4 토큰 발급 시 쿠키 설정
+
+> **위치**: `src/main/kotlin/com/usktea/lunch/service/api/TokenApiService.kt:35-72`
+
+```kotlin
+fun issueToken(
+    issueTokenRequest: IssueTokenRequest,
+    httpServletResponse: HttpServletResponse,
+): IssueTokenResponse {
+    val issueTokenResponse = when (issueTokenRequest) {
+        is IssueTokenRequest.AuthorizationCode -> issueToken(issueTokenRequest)
+        is IssueTokenRequest.RefreshToken -> refreshToken(issueTokenRequest)
+    }
+
+    // 1. Refresh Token 쿠키 설정
+    val refreshTokenCookie = ResponseCookie.from("refresh_token", issueTokenResponse.refreshToken)
+        .httpOnly(true)
+        .secure(true)
+        .sameSite("Lax")
+        .path("/api/auth/tokens")
+        .maxAge(issueTokenResponse.refreshTokenExpiresIn.seconds)
+        .build()
+    httpServletResponse.addHeader("Set-Cookie", refreshTokenCookie.toString())
+
+    // 2. CloudFront Signed Cookie 설정
+    issueTokenResponse.cloudfrontSignedCookies.forEach { (name, value) ->
+        val cookie = ResponseCookie.from(name, value)
+            .httpOnly(true)
+            .secure(true)
+            .sameSite("None")  // 크로스 도메인 요청 허용
+            .domain(".$cloudfrontDomain")  // 서브도메인 포함
+            .path("/")
+            .build()
+        httpServletResponse.addHeader("Set-Cookie", cookie.toString())
+    }
+
+    return issueTokenResponse
+}
+```
+
+#### 5.9.5 application.yml 설정
+
+```yaml
+aws:
+  cloudfront:
+    domain: dev-htbeyondcloud.com
+    key-pair-id: ${CLOUDFRONT_KEY_PAIR_ID}
+    private-key: ${CLOUDFRONT_PRIVATE_KEY}
+    resource-path: /images/*
+    cookie-expiration: 1h
+```
+
+#### 5.9.6 프론트엔드에서 이미지 요청
+
+브라우저가 자동으로 Signed Cookie를 포함하여 요청합니다:
+
+```jsx
+// web/src/components/ui/CloudImage.jsx
+<img src={`https://static.dev-htbeyondcloud.com/images/${imageKey}`} />
+```
+
+CloudFront가 쿠키를 검증하고, 유효하면 S3에서 이미지를 반환합니다.
+
+---
+
+## 5.10 리뷰 시스템 아키텍처
+
+### 5.10.1 개요
+
+사용자가 식당에 대한 리뷰(별점 + 텍스트 + 이미지)를 작성하고 조회하는 시스템입니다.
+
+```
+[프론트엔드] → POST /api/reviews → [백엔드] → [PostgreSQL]
+     ↓                                          ↓
+[ImageUploader] → S3 Presigned URL → [S3] ← CloudFront ← [브라우저]
+```
+
+### 5.10.2 리뷰 엔티티
+
+> **위치**: `src/main/kotlin/com/usktea/lunch/entity/ReviewEntity.kt`
+
+```kotlin
+@Entity
+@Table(name = "review", schema = "lunch")
+class ReviewEntity(
+    val restaurantManagementNumber: String,  // 식당 관리번호
+    val reviewerId: Long,                     // 작성자 ID
+    val rating: Int,                          // 별점 (1-5)
+    val content: String,                      // 리뷰 내용 (100자 제한)
+    @Type(JsonType::class)
+    @Column(columnDefinition = "jsonb")
+    val imageUrls: List<URL> = emptyList(),   // 이미지 URL 목록 (S3)
+    @Enumerated(EnumType.STRING)
+    val status: ReviewStatus = ReviewStatus.CREATED,
+    val createdAt: OffsetDateTime = OffsetDateTime.now(),
+    val updatedAt: OffsetDateTime? = null,
+    val deletedAt: OffsetDateTime? = null,
+) {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0L
+
+    enum class ReviewStatus { CREATED, DELETED }
+}
+```
+
+### 5.10.3 리뷰 API
+
+| 엔드포인트 | 메서드 | 설명 |
+|-----------|--------|------|
+| `/api/reviews` | POST | 리뷰 작성 |
+| `/api/reviews/{id}` | GET | 리뷰 목록 조회 (커서 페이징) |
+| `/api/reviews/{id}/rating` | GET | 평점 통계 조회 |
+
+### 5.10.4 이미지 업로드 플로우 (Presigned URL)
+
+```
+1. [프론트엔드] POST /api/images/presigned-urls
+   { context: "REVIEW", imageMetas: [{ name, imageSize, contentType }] }
+   ↓
+2. [백엔드] S3 Presigned URL 생성
+   ↓
+3. [프론트엔드] S3에 직접 업로드 (Presigned URL 사용)
+   PUT https://s3.amazonaws.com/bucket/key?X-Amz-Signature=...
+   ↓
+4. [프론트엔드] 업로드 완료 후 리뷰 작성 요청
+   POST /api/reviews { rating, content, imageUrls: [...] }
+```
+
+### 5.10.5 프론트엔드 Store 구조
+
+```javascript
+// ReviewStore.js
+class ReviewStore extends Store {
+  reviews = [];
+  nextCursor = null;
+  draftReview = { rating: 0, content: '' };
+  rating = null;
+
+  async fetchReviews(restaurantId, pageSize, cursor) { ... }
+  async submitReview(restaurantId, imageNames, imageUrls) { ... }
+  async fetchReviewRating(restaurantId) { ... }
+}
+
+// ImageStore.js
+class ImageStore extends Store {
+  images = new Map();  // name → { file, preview, uploadStatus }
+
+  addImages(files) { ... }
+  async uploadAllImages(context) { ... }  // Presigned URL로 S3 업로드
+}
+```
+
 ---
 
 ## 6. H3 지리 공간 인덱싱 시스템

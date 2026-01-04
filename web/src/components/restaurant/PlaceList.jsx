@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import PlaceListItem from './PlaceListItem';
-import usePlaceStore from '../../hooks/usePlaceStore';
+import useStore from '../../hooks/useStore';
+import { searchStore } from '../../stores/SearchStore';
 
 const ListContainer = styled.div`
   width: 400px;
@@ -142,22 +143,48 @@ const EmptyState = styled.div`
 
 /**
  * 맛집 리스트 컴포넌트
- * placeStore.places를 표시
+ * searchStore.places를 표시
  */
 function PlaceList() {
-  const placeStore = usePlaceStore();
+  useStore(searchStore);
   const [selectedPlaceId, setSelectedPlaceId] = useState(null);
   const [hoveredPlaceId, setHoveredPlaceId] = useState(null);
+
+  const places = searchStore.getPlaces();
+  const isLoading = searchStore.getIsLoading();
+  const error = searchStore.getError();
 
   const handlePlaceClick = (id) => {
     setSelectedPlaceId((prev) => (prev === id ? null : id));
   };
 
-  if (placeStore.places.length === 0) {
+  if (isLoading) {
+    return (
+      <ListContainer>
+        <LoadingState>
+          <Spinner />
+          <p>검색 중...</p>
+        </LoadingState>
+      </ListContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <ListContainer>
+        <ErrorState>
+          <p>{error}</p>
+          <button onClick={() => searchStore.search()}>다시 시도</button>
+        </ErrorState>
+      </ListContainer>
+    );
+  }
+
+  if (places.length === 0) {
     return (
       <ListContainer>
         <EmptyState>
-          <p>🔍 검색 결과가 없습니다.</p>
+          <p>검색 결과가 없습니다.</p>
         </EmptyState>
       </ListContainer>
     );
@@ -166,17 +193,17 @@ function PlaceList() {
   return (
     <ListContainer>
       <ListHeader>
-        <ResultCount>총 {placeStore.places.length}개의 장소</ResultCount>
+        <ResultCount>총 {places.length}개의 장소</ResultCount>
       </ListHeader>
       <ListItems>
-        {placeStore.places.map((place) => (
+        {places.map((place) => (
           <PlaceListItem
-            key={place.id}
+            key={place.managementNumber}
             restaurant={place}
-            isSelected={selectedPlaceId === place.id}
-            isHovered={hoveredPlaceId === place.id}
-            onClick={() => handlePlaceClick(place.id)}
-            onMouseEnter={() => setHoveredPlaceId(place.id)}
+            isSelected={selectedPlaceId === place.managementNumber}
+            isHovered={hoveredPlaceId === place.managementNumber}
+            onClick={() => handlePlaceClick(place.managementNumber)}
+            onMouseEnter={() => setHoveredPlaceId(place.managementNumber)}
             onMouseLeave={() => setHoveredPlaceId(null)}
           />
         ))}

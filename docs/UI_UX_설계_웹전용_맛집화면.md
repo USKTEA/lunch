@@ -611,26 +611,55 @@ setInterval(async () => {
 └──────────────────────────────┘
 ```
 
-## 9. 구현 우선순위
+## 9. 구현 현황 및 우선순위
 
-### Phase 1 (Week 1-3): 기본 맛집 찾기
-- [x] 식당 목록 + 지도
-- [x] 필터링 & 정렬
-- [x] 상세 정보 패널
+### 9.1 현재 구현 완료 (2025년 1월 기준)
 
-### Phase 2 (Week 4-5): 모임 기능 기본
+#### Phase 1: 기본 맛집 찾기 ✅ 완료
+| 기능 | 상태 | 구현 파일 |
+|------|------|----------|
+| 네이버 지도 연동 | ✅ 완료 | `RestaurantMap.jsx` |
+| 식당 목록 표시 | ✅ 완료 | `PlaceList.jsx`, `PlaceListItem.jsx` |
+| H3 클러스터링 마커 | ✅ 완료 | `MarkerFactory.jsx` |
+| 식당 상세 패널 | ✅ 완료 | `RestaurantDetailPanel.jsx` |
+| 영업정보 탭 | ✅ 완료 | `OverviewTab.jsx` |
+
+#### Phase 1.5: 리뷰 시스템 ✅ 완료
+| 기능 | 상태 | 구현 파일 |
+|------|------|----------|
+| 리뷰 목록 (무한스크롤) | ✅ 완료 | `ReviewTab.jsx`, `ReviewItem.jsx` |
+| 리뷰 작성 모달 | ✅ 완료 | `ReviewWriteModal.jsx` |
+| 별점 입력 UI | ✅ 완료 | `StarRatingInput.jsx` |
+| 이미지 업로드 | ✅ 완료 | `ImageUploader.jsx`, `ImageStore.js` |
+| 평점 통계 표시 | ✅ 완료 | `ReviewStore.js` |
+
+#### 인증 시스템 ✅ 완료
+| 기능 | 상태 | 구현 파일 |
+|------|------|----------|
+| 카카오 OAuth2 로그인 | ✅ 완료 | `LoginPage.jsx`, `AuthStore.js` |
+| 토큰 자동 갱신 | ✅ 완료 | `ApiService.js` |
+| 사용자 정보 조회 | ✅ 완료 | `UserStore.js` |
+
+### 9.2 미구현 (향후 개발 예정)
+
+#### Phase 2: 런치메이트 모임 기능 ❌
 - [ ] 모임 만들기 모달 (3단계)
 - [ ] MeetingStore 구현
 - [ ] 모임 API 연동
 - [ ] 내 모임 페이지
 
-### Phase 3 (Week 6): 모임 고도화
+#### Phase 3: 모임 고도화 ❌
 - [ ] 모임 참여/나가기
 - [ ] 알림 시스템
 - [ ] 실시간 업데이트
 - [ ] 모임 취소/수정
 
-### Phase 4 (Week 7+): 폴리싱
+#### Phase 4: 추천 시스템 ❌
+- [ ] 오늘의 추천
+- [ ] 카테고리/가격 필터
+- [ ] 인기 순위
+
+#### Phase 5: 폴리싱 ❌
 - [ ] 에러 처리 강화
 - [ ] UX 개선 (애니메이션, 트랜지션)
 - [ ] 성능 최적화

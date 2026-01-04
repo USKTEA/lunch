@@ -1,10 +1,25 @@
-import React, { useState } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import {
-  CATEGORIES,
-  SORT_OPTIONS,
-  DISTANCE_OPTIONS,
-} from '../../data/places.mock';
+import useStore from '../../hooks/useStore';
+import { searchStore } from '../../stores/SearchStore';
+import { mapStore } from '../../stores/MapStore';
+
+const CATEGORIES = {
+  ALL: 'all',
+  KOREAN: 'KOREAN',
+  CHINESE: 'CHINESE',
+  JAPANESE: 'JAPANESE',
+  WESTERN: 'WESTERN',
+  ETC: 'etc',
+};
+
+const SORT_OPTIONS = {
+  DISTANCE: 'distance',
+  RATING: 'rating',
+  REVIEW_COUNT: 'reviewCount',
+};
+
+const DISTANCE_OPTIONS = [300, 500, 1000];
 
 const SearchContainer = styled.div`
   width: 400px;
@@ -120,40 +135,53 @@ const FilterSelect = styled.select`
   }
 `;
 
-const CheckboxLabel = styled.label`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  color: #666;
-  user-select: none;
-
-  input[type='checkbox'] {
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-    accent-color: #4ecdc4;
-  }
-
-  &:hover span {
-    color: #4ecdc4;
-  }
-`;
-
 /**
  * 장소 검색 컴포넌트
  */
 function PlaceSearch() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [category, setCategory] = useState(CATEGORIES.ALL);
-  const [sortBy, setSortBy] = useState(SORT_OPTIONS.DISTANCE);
-  const [maxDistance, setMaxDistance] = useState(500);
-  const [openOnly, setOpenOnly] = useState(false);
+  useStore(searchStore);
+  useStore(mapStore);
 
-  const handleOpenOnlyToggle = () => {
-    setOpenOnly((prev) => !prev);
-  };
+  const keyword = searchStore.getKeyword();
+  const category = searchStore.getCategory();
+  const sortBy = searchStore.getSortBy();
+  const maxDistance = searchStore.getMaxDistance();
+
+  // 지도 기본 위치를 검색 중심 위치로 설정 및 초기 검색
+  useEffect(() => {
+    const position = mapStore.defaultPosition;
+    if (position) {
+      searchStore.setCenterLocation(position.y, position.x);
+    }
+    searchStore.search();
+  }, []);
+
+  // 디바운스된 검색 (키워드 변경 시)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchStore.search();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [keyword]);
+
+  const handleKeywordChange = useCallback((e) => {
+    searchStore.setKeyword(e.target.value);
+  }, []);
+
+  const handleCategoryChange = useCallback((newCategory) => {
+    searchStore.setCategory(newCategory);
+    searchStore.search();
+  }, []);
+
+  const handleSortByChange = useCallback((e) => {
+    searchStore.setSortBy(e.target.value);
+    searchStore.search();
+  }, []);
+
+  const handleMaxDistanceChange = useCallback((e) => {
+    searchStore.setMaxDistance(Number(e.target.value));
+    searchStore.search();
+  }, []);
 
   return (
     <SearchContainer>
@@ -161,9 +189,9 @@ function PlaceSearch() {
         <SearchIcon>🔍</SearchIcon>
         <SearchInput
           type="text"
-          placeholder="맛집 이름이나 태그로 검색..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="맛집 이름으로 검색..."
+          value={keyword}
+          onChange={handleKeywordChange}
         />
       </SearchBox>
 
@@ -172,72 +200,57 @@ function PlaceSearch() {
         <CategoryChips>
           <CategoryChip
             $active={category === CATEGORIES.ALL}
-            onClick={() => setCategory(CATEGORIES.ALL)}
+            onClick={() => handleCategoryChange(CATEGORIES.ALL)}
           >
             전체
           </CategoryChip>
           <CategoryChip
             $active={category === CATEGORIES.KOREAN}
-            onClick={() => setCategory(CATEGORIES.KOREAN)}
+            onClick={() => handleCategoryChange(CATEGORIES.KOREAN)}
           >
             한식
           </CategoryChip>
           <CategoryChip
             $active={category === CATEGORIES.CHINESE}
-            onClick={() => setCategory(CATEGORIES.CHINESE)}
+            onClick={() => handleCategoryChange(CATEGORIES.CHINESE)}
           >
             중식
           </CategoryChip>
           <CategoryChip
             $active={category === CATEGORIES.JAPANESE}
-            onClick={() => setCategory(CATEGORIES.JAPANESE)}
+            onClick={() => handleCategoryChange(CATEGORIES.JAPANESE)}
           >
             일식
           </CategoryChip>
           <CategoryChip
             $active={category === CATEGORIES.WESTERN}
-            onClick={() => setCategory(CATEGORIES.WESTERN)}
+            onClick={() => handleCategoryChange(CATEGORIES.WESTERN)}
           >
             양식
           </CategoryChip>
           <CategoryChip
             $active={category === CATEGORIES.ETC}
-            onClick={() => setCategory(CATEGORIES.ETC)}
+            onClick={() => handleCategoryChange(CATEGORIES.ETC)}
           >
             기타
           </CategoryChip>
         </CategoryChips>
       </FilterRow>
 
-      {/* 정렬, 거리, 영업중 필터 */}
+      {/* 정렬, 거리 필터 */}
       <FilterRow className="bottom-row">
         <FilterControls>
-          <FilterSelect
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-          >
+          <FilterSelect value={sortBy} onChange={handleSortByChange}>
             <option value={SORT_OPTIONS.DISTANCE}>거리순</option>
             <option value={SORT_OPTIONS.RATING}>평점순</option>
             <option value={SORT_OPTIONS.REVIEW_COUNT}>리뷰순</option>
           </FilterSelect>
 
-          <FilterSelect
-            value={maxDistance}
-            onChange={(e) => setMaxDistance(Number(e.target.value))}
-          >
+          <FilterSelect value={maxDistance} onChange={handleMaxDistanceChange}>
             <option value={DISTANCE_OPTIONS[0]}>300m 이내</option>
             <option value={DISTANCE_OPTIONS[1]}>500m 이내</option>
             <option value={DISTANCE_OPTIONS[2]}>1000m 이내</option>
           </FilterSelect>
-
-          <CheckboxLabel>
-            <input
-              type="checkbox"
-              checked={openOnly}
-              onChange={handleOpenOnlyToggle}
-            />
-            <span>영업중만</span>
-          </CheckboxLabel>
         </FilterControls>
       </FilterRow>
     </SearchContainer>

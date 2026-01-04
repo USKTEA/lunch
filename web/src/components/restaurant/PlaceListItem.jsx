@@ -179,15 +179,16 @@ function PlaceListItem({
 }) {
   const {
     name,
-    rating,
+    averageRating,
     reviewCount,
     distance,
     walkTime,
     averagePrice,
-    imageUrl,
-    isOpen,
-    tags,
+    mainCategory,
+    detailCategory,
   } = restaurant;
+
+  const hasRating = averageRating != null && reviewCount > 0;
 
   return (
     <Item
@@ -199,33 +200,33 @@ function PlaceListItem({
       tabIndex={0}
       aria-label={`${name} 상세 정보 보기`}
     >
-      <ImageContainer>
-        <img src={imageUrl} alt={name} />
-        {!isOpen && <ClosedBadge>영업종료</ClosedBadge>}
-      </ImageContainer>
-
       <Info>
         <Name>{name}</Name>
 
-        <Rating>
-          <Stars>
-            <StarRating rating={rating} />
-          </Stars>
-          <RatingValue>{rating.toFixed(1)}</RatingValue>
-          <ReviewCount>({reviewCount})</ReviewCount>
-        </Rating>
+        {hasRating ? (
+          <Rating>
+            <Stars>
+              <StarRating rating={averageRating} />
+            </Stars>
+            <RatingValue>{averageRating.toFixed(1)}</RatingValue>
+            <ReviewCount>({reviewCount})</ReviewCount>
+          </Rating>
+        ) : (
+          <Rating>
+            <ReviewCount>리뷰 없음</ReviewCount>
+          </Rating>
+        )}
 
         <Meta>
           <WalkTime>🚶 도보 {walkTime}분</WalkTime>
           <Distance>{distance}m</Distance>
-          <Price>💰 평균 {formatPrice(averagePrice)}원</Price>
+          {averagePrice > 0 && <Price>💰 평균 {formatPrice(averagePrice)}원</Price>}
         </Meta>
 
-        {tags && tags.length > 0 && (
+        {(mainCategory || detailCategory) && (
           <Tags>
-            {tags.slice(0, 3).map((tag, index) => (
-              <Tag key={index}>#{tag}</Tag>
-            ))}
+            {mainCategory && <Tag>#{mainCategory}</Tag>}
+            {detailCategory && <Tag>#{detailCategory}</Tag>}
           </Tags>
         )}
       </Info>

@@ -3,19 +3,82 @@ package com.usktea.lunch.service.api
 import com.uber.h3core.H3Core
 import com.uber.h3core.PolygonToCellsFlags
 import com.uber.h3core.util.LatLng
+import com.usktea.lunch.common.Category
 import com.usktea.lunch.controller.vo.GetRestaurantBusinessInfoResponse
+import com.usktea.lunch.controller.vo.SearchPlacesResponse
 import com.usktea.lunch.controller.vo.SearchRestaurantResponse
 import com.usktea.lunch.entity.RestaurantEntity
+import com.usktea.lunch.repository.RestaurantRepository
 import com.usktea.lunch.service.entity.RestaurantEntityService
 import jakarta.persistence.EntityNotFoundException
 import org.springframework.stereotype.Service
 import kotlin.String
+import kotlin.math.roundToInt
 
 @Service
 class RestaurantApiService(
     private val h3core: H3Core,
     private val restaurantEntityService: RestaurantEntityService,
+    private val restaurantRepository: RestaurantRepository,
 ) {
+    fun searchPlaces(
+        centerLat: Double,
+        centerLon: Double,
+        keyword: String?,
+        mainCategory: Category?,
+        sortBy: String,
+        maxDistance: Int,
+    ): SearchPlacesResponse {
+        val (resolution, kRing) = getH3SearchParams(maxDistance)
+        val centerCell = h3core.latLngToCellAddress(centerLat, centerLon, resolution)
+        val h3Cells = h3core.gridDisk(centerCell, kRing)
+
+        val places =
+            restaurantRepository.searchPlaces(
+                h3Cells = h3Cells.toTypedArray(),
+                centerLat = centerLat,
+                centerLon = centerLon,
+                maxDistance = maxDistance,
+                keyword = keyword?.ifBlank { null },
+                mainCategory = mainCategory?.korean,
+                sortBy = sortBy,
+                limit = 50,
+            )
+
+        return SearchPlacesResponse(
+            places =
+                places.map { place ->
+                    SearchPlacesResponse.PlaceVo(
+                        managementNumber = place.managementNumber,
+                        name = place.name,
+                        mainCategory = place.mainCategory,
+                        detailCategory = place.detailCategory,
+                        address = place.address,
+                        distance = place.distance,
+                        walkTime = calculateWalkTime(place.distance),
+                        averageRating = if (place.reviewCount > 0) (place.averageRating * 10).roundToInt() / 10.0 else null,
+                        reviewCount = place.reviewCount,
+                        averagePrice = calculateAveragePrice(place.priceRangeMinimum, place.priceRangeMaximum),
+                        latitude = place.latitude,
+                        longitude = place.longitude,
+                    )
+                },
+        )
+    }
+
+    private fun calculateWalkTime(distanceMeters: Int): Int {
+        // 평균 도보 속도: 분당 80m
+        return (distanceMeters / 80.0).roundToInt().coerceAtLeast(1)
+    }
+
+    private fun calculateAveragePrice(
+        minimum: Int?,
+        maximum: Int?,
+    ): Int? {
+        if (minimum == null || maximum == null) return null
+        return (minimum + maximum) / 2
+    }
+
     fun searchRestaurants(
         boundary: String,
         zoomLevel: Int,
@@ -147,6 +210,27 @@ class RestaurantApiService(
     }
 
     /**
+     * 거리 기반 검색을 위한 H3 파라미터 결정
+     *
+     * | 거리    | Resolution | 셀 지름  | k-ring | 셀 수 | 커버 범위 |
+     * |---------|------------|---------|--------|-------|----------|
+     * | 300m    | 9          | ~174m   | 2      | 19    | ~520m    |
+     * | 500m    | 9          | ~174m   | 3      | 37    | ~700m    |
+     * | 1000m   | 8          | ~460m   | 3      | 37    | ~1380m   |
+     *
+     * k-ring을 보수적으로 설정하여 경계에서 누락 방지
+     * 정확한 거리는 ST_DistanceSphere로 후검증
+     */
+    private fun getH3SearchParams(maxDistance: Int): Pair<Int, Int> {
+        return when {
+            maxDistance <= 300 -> 9 to 2
+            maxDistance <= 500 -> 9 to 3
+            maxDistance <= 1000 -> 8 to 3
+            else -> 8 to 4
+        }
+    }
+
+    /**
      * | 네이버 지도 Zoom Level | 대략적 거리 스케일 | H3 Resolution | 셀 지름(약) | 용도 |
      * |------------------------|-------------------|--------------------|-------------|------|
      * | 16 | 약 150m | 9 | ~150m | 상권 단위 탐색 / 거리 중심 |
@@ -156,7 +240,7 @@ class RestaurantApiService(
      */
     private fun toH3Resolution(zoomLevel: Int): Int {
         return when (zoomLevel) {
-            14 -> 8
+            14 -> 7
             15 -> 8
             16 -> 9
             17 -> 10

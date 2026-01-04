@@ -222,6 +222,32 @@ class ApiService {
 
     return response.data;
   }
+
+  /**
+   * 식당 검색 (중심 위치 기준 거리 계산 포함)
+   * @param {Object} params - 검색 파라미터
+   * @param {number} params.centerLat - 중심 위도
+   * @param {number} params.centerLon - 중심 경도
+   * @param {string} [params.keyword] - 검색어
+   * @param {string} [params.category] - 카테고리 (korean, chinese, japanese, western)
+   * @param {string} [params.sortBy] - 정렬 (distance, rating, reviewCount)
+   * @param {number} [params.maxDistance] - 최대 거리 (미터)
+   * @returns {Promise<{places: Array}>}
+   */
+  async searchPlaces({ centerLat, centerLon, keyword, category, sortBy = 'distance', maxDistance = 500 }) {
+    const params = {
+      centerLat,
+      centerLon,
+      sortBy,
+      maxDistance,
+    };
+
+    if (keyword) params.keyword = keyword;
+    if (category && category !== 'all') params.category = category;
+
+    const response = await this.instance.get('/api/restaurants/search', { params });
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();
